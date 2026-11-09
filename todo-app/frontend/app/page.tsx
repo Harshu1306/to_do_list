@@ -46,9 +46,7 @@ export default function HomePage() {
       setTasks(taskList);
       setStats(taskStats);
     } catch (err) {
-      setError(
-        "Could not load tasks. Is the backend running on http://localhost:8000 ?"
-      );
+      setError("Could not load tasks. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);

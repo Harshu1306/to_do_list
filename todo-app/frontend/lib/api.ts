@@ -1,12 +1,14 @@
 import type { Task, TaskFilter, TaskInput, TaskStats } from "../types/task";
 
-// Backend API URL from environment variables.
-// - NEXT_PUBLIC_API_URL: direct backend URL (browser calls it; the backend
-//   must allow this origin in CORS).
-// - If unset, calls go to the same-origin "/api" path, which Next.js proxies
-//   to API_PROXY_URL (see next.config.ts rewrites) — no CORS change needed
-//   on the FastAPI backend. This is the default for local development.
-export const API_URL: string = process.env.NEXT_PUBLIC_API_URL || "/api";
+// Browser API base — always same-origin "/api".
+// Production (Vercel multi-service): the top-level vercel.json routes
+// "/api/(.*)" to the backend service and strips the "/api" prefix via a
+// request.path transform, so "/api/tasks" reaches FastAPI as "/tasks".
+// Local development: Next.js rewrites (next.config.ts) proxy "/api/*" to
+// API_PROXY_URL (see .env.example), so "/api/tasks" reaches FastAPI
+// as "/tasks" as well. No NEXT_PUBLIC_API_URL is used, so the browser
+// never calls a direct backend origin.
+export const API_URL: string = "/api";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
