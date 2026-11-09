@@ -26,6 +26,34 @@ from models import StatsResponse, TaskCreate, TaskResponse, TaskUpdate
 
 app = FastAPI(title="To-Do List API")
 
+
+class _StripApiPrefix:
+    """Accept /api-prefixed aliases so /api/tasks reaches the /tasks route.
+
+    In production Vercel strips /api at the edge (vercel.json request.path
+    transform), but accept /api/tasks as well so the app works even if that
+    transform is absent. Local /tasks behavior is unchanged.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            path = scope.get("path", "")
+            if path == "/api":
+                scope = dict(scope)
+                scope["path"] = "/"
+                scope["raw_path"] = b"/"
+            elif path.startswith("/api/"):
+                scope = dict(scope)
+                scope["path"] = path[4:]  # /api/tasks -> /tasks
+                scope["raw_path"] = scope["path"].encode()
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(_StripApiPrefix)
+
 # Allow the React dev server (Vite on port 5173) to call this API.
 app.add_middleware(
     CORSMiddleware,

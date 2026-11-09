@@ -4,6 +4,7 @@
     "backend": {
       "root": "todo-app/backend",
       "framework": "fastapi",
+      "entrypoint": "main:app",
       "routes": [
         {
           "src": "/api/(.*)",
