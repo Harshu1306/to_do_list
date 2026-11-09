@@ -1,26 +1,38 @@
-import { useCallback, useEffect, useState } from "react";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
-import { api } from "./api.js";
+"use client";
 
-const FILTERS = [
+// Direct port of the Vite app (src/App.jsx in frontend-vite-backup):
+// same JSX, classNames, state logic, API calls and behaviour.
+// In Next.js App Router the page is a Client Component because it uses
+// hooks + fetch; data loads in useEffect, so there are no hydration errors.
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { api } from "../lib/api";
+import type { Task, TaskFilter, TaskStats } from "../types/task";
+
+const FILTERS: { id: TaskFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "pending", label: "Pending" },
   { id: "completed", label: "Completed" },
 ];
 
-export default function App() {
-  const [tasks, setTasks] = useState([]);
-  const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0 });
-  const [filter, setFilter] = useState("all");
+export default function HomePage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [stats, setStats] = useState<TaskStats>({
+    total: 0,
+    completed: 0,
+    pending: 0,
+    completion_percentage: 0,
+  });
+  const [filter, setFilter] = useState<TaskFilter>("all");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  const [deletingId, setDeletingId] = useState(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -50,7 +62,7 @@ export default function App() {
 
   // ---------- Actions ----------
 
-  async function handleAdd(event) {
+  async function handleAdd(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) return;
     try {
@@ -60,44 +72,44 @@ export default function App() {
       setDescription("");
       await loadData();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     }
   }
 
-  async function handleToggle(task) {
+  async function handleToggle(task: Task) {
     try {
       setError("");
       const updated = await api.updateTask(task.id, { completed: !task.completed });
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
       setStats(await api.getStats());
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     }
   }
 
-  function startEdit(task) {
+  function startEdit(task: Task) {
     setEditingId(task.id);
     setEditTitle(task.title);
     setEditDescription(task.description || "");
   }
 
-  async function handleSaveEdit(event) {
+  async function handleSaveEdit(event: FormEvent) {
     event.preventDefault();
     if (!editTitle.trim()) return;
     try {
       setError("");
-      const updated = await api.updateTask(editingId, {
+      const updated = await api.updateTask(editingId as number, {
         title: editTitle.trim(),
         description: editDescription.trim() || null,
       });
       setTasks((prev) => prev.map((t) => (t.id === editingId ? updated : t)));
       setEditingId(null);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     }
   }
 
-  async function handleDelete(task) {
+  async function handleDelete(task: Task) {
     // Play the fade-out animation first, then remove the task.
     setDeletingId(task.id);
     try {
@@ -108,7 +120,7 @@ export default function App() {
       }, 250);
     } catch (err) {
       setDeletingId(null);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     }
   }
 

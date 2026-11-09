@@ -1,20 +1,22 @@
 # My To-Do List
 
-A basic, functional to-do list web application built with **React.js (Vite) + CSS** on the frontend and **Python FastAPI + PostgreSQL** on the backend. Tasks are stored in PostgreSQL, so they remain saved after refreshing the page.
+A basic, functional to-do list web application built with **Next.js (App Router) + TypeScript + CSS** on the frontend and **Python FastAPI + PostgreSQL** on the backend. Tasks are stored in PostgreSQL, so they remain saved after refreshing the page. (The frontend was migrated from Vite + React; the original Vite code is preserved in `frontend-vite-backup/`.)
 
 ## Project structure
 
 ```text
 todo-app/
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx      Main UI: add / edit / delete / toggle / filter
-│   │   ├── api.js       Fetch helpers for the FastAPI backend
-│   │   ├── main.jsx     React entry point
-│   │   └── index.css    All styling (responsive, small animations)
-│   ├── index.html
+├── frontend/            Next.js (App Router) frontend
+│   ├── app/
+│   │   ├── page.tsx     Main UI: add / edit / delete / toggle / filter
+│   │   ├── layout.tsx   Root layout (title/meta, global CSS)
+│   │   └── globals.css  All styling (identical to the old Vite index.css)
+│   ├── lib/api.ts       Fetch helpers for the FastAPI backend
+│   ├── types/task.ts    Task types mirroring the API models
+│   ├── next.config.ts   /api rewrite proxy to the backend
 │   ├── package.json
-│   └── vite.config.js
+│   └── .env.example     API_PROXY_URL / NEXT_PUBLIC_API_URL
+├── frontend-vite-backup/  Original Vite + React frontend (preserved)
 ├── backend/
 │   ├── main.py          FastAPI app and REST API endpoints
 │   ├── database.py      PostgreSQL connection and table creation
@@ -82,7 +84,7 @@ uvicorn main:app --reload --port 8000
 
 The backend runs at http://localhost:8000.
 
-### 2. Frontend (React + Vite)
+### 2. Frontend (Next.js)
 
 ```bash
 cd todo-app/frontend
@@ -90,7 +92,10 @@ npm install
 npm run dev
 ```
 
-The frontend runs at http://localhost:5173 and talks to the backend at http://localhost:8000.
+The frontend runs at http://localhost:3000. The browser calls `/api/*` on the
+Next.js origin and Next.js proxies to the backend (`API_PROXY_URL`, see
+`frontend/.env.example`), so no backend CORS change is needed. For Vercel
+deployment see `frontend/README.md`.
 
 > Keep the backend terminal running while you use the app. If a task request fails, the UI shows an error message instead of crashing.
 
