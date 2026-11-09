@@ -1,12 +1,11 @@
+
 """PostgreSQL database setup for the To-Do List app.
 
-The connection string comes from a `.env` file (see .env.example):
-
+Local development:
     DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/todo_db
 
-Before running the app, create the `todo_db` database once in pgAdmin
-(right-click "Databases" -> Create Database -> name: todo_db).
-The `tasks` table itself is created automatically on startup.
+For deployment, set DATABASE_URL in your hosting provider's
+environment variables (for example, Vercel).
 """
 
 import os
@@ -15,26 +14,29 @@ import psycopg
 from dotenv import load_dotenv
 from psycopg.rows import dict_row
 
+# Load .env for local development.
+# On Vercel, DATABASE_URL is supplied through environment variables.
 load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/todo_db",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError(
+        "DATABASE_URL is not set. Add it to your .env file "
+        "or deployment environment variables."
+    )
 
 
 def get_connection() -> psycopg.Connection:
-    """Open a connection that returns rows as dictionaries."""
-    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    """Open a PostgreSQL connection that returns rows as dictionaries."""
+    return psycopg.connect(
+        DATABASE_URL,
+        row_factory=dict_row,
+    )
 
 
 def init_db() -> None:
-    """Create the tasks table if it does not exist yet.
-
-    The ALTER TABLE statements are safe migrations for databases created
-    before priority/due_date existed: existing rows get the defaults
-    (priority 'medium', no due date).
-    """
+    """Create the tasks table and add missing columns if needed."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -50,11 +52,20 @@ def init_db() -> None:
                 )
                 """
             )
+
             cur.execute(
-                "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS "
-                "priority VARCHAR(10) NOT NULL DEFAULT 'medium'"
+                """
+                ALTER TABLE tasks
+                ADD COLUMN IF NOT EXISTS
+                priority VARCHAR(10) NOT NULL DEFAULT 'medium'
+                """
             )
+
             cur.execute(
-                "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS due_date DATE"
+                """
+                ALTER TABLE tasks
+                ADD COLUMN IF NOT EXISTS due_date DATE
+                """
             )
+
         conn.commit()
